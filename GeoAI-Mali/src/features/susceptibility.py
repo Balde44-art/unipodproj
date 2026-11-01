@@ -1,4 +1,4 @@
-"""Indice de susceptibilité (version 0.2) : combinaison multicritère SANS apprentissage supervisé.
+"""Indice de susceptibilité (version 0.3) : combinaison multicritère SANS apprentissage supervisé.
 
 Ce n'est PAS une prédiction d'inondation. C'est un indice relatif entre 0 et 1 qui classe les
 pixels de la zone d'étude selon leur exposition potentielle au débordement du fleuve et à
@@ -25,6 +25,15 @@ Méthode :
    toutes les combinaisons de poids possibles). Pour chaque pixel, on calcule la fraction des
    tirages où il fait partie des 20 % de pixels les plus exposés. Un pixel proche de 1 est
    « robustement exposé », quel que soit le choix des poids.
+
+Deux composantes lisibles (v0.3) : l'indice combiné est complété par deux sous-indices.
+    fluviale  = moyenne des rangs de height et distance  (débordement du fleuve et du réseau)
+    locale    = moyenne des rangs de slope et twi         (ruissellement, cuvettes, eau qui converge)
+Pourquoi : le contrôle Sentinel-1 2024 (python -m src.models.validate_s1) ne voit que l'eau
+fluviale. Il valide donc (en partie) la composante fluviale, et ne peut rien dire de la composante
+locale, qui reste NON validée faute d'étiquettes d'inondation urbaine. Les présenter séparément
+évite qu'un bon résultat fluvial serve de caution à la partie ruissellement. Les poids de
+l'indice combiné n'ont PAS été ajustés sur ces étiquettes.
 
 Historique : la v0.1 (3 critères, sans TWI) plaçait Missabougou au percentile ~87 des zones
 bâties. Le TWI a été ajouté parce que ce quartier est décrit comme un réceptacle du
@@ -60,6 +69,8 @@ PATHS = {
 }
 OUT_SCORE = PROCESSED / "susceptibility_bamako_utm.tif"
 OUT_ROBUST = PROCESSED / "susceptibility_robust_utm.tif"
+OUT_FLUVIAL = PROCESSED / "susceptibility_fluvial_utm.tif"
+OUT_LOCAL = PROCESSED / "susceptibility_local_utm.tif"
 FIGURE = ROOT / "outputs" / "figures" / "susceptibility_bamako.png"
 
 CRITERIA = ["height", "distance", "slope", "twi"]
@@ -73,6 +84,16 @@ SCENARIOS = {
     "convergence_dominante": {"height": 0.20, "distance": 0.20, "slope": 0.10, "twi": 0.50},
 }
 MAIN_SCENARIO = "poids_egaux"
+COMPONENTS = {
+    "fluviale": {"height": 0.5, "distance": 0.5},
+    "locale": {"slope": 0.5, "twi": 0.5},
+}
+
+
+def component_score(layers, weights):
+    """Moyenne pondérée des seuls critères d'une composante (NaN là où une couche est vide)."""
+    total = sum(weights.values())
+    return sum(w / total * layers[k] for k, w in weights.items()).astype("float32")
 
 
 def normalize_low_is_risky(arr):
@@ -149,12 +170,15 @@ def run():
     main = scores[MAIN_SCENARIO]
     robust = robustness(layers)
 
-    for path, arr in ((OUT_SCORE, main), (OUT_ROBUST, robust)):
+    fluvial = component_score(layers, COMPONENTS["fluviale"])
+    local = component_score(layers, COMPONENTS["locale"])
+
+    for path, arr in ((OUT_SCORE, main), (OUT_ROBUST, robust), (OUT_FLUVIAL, fluvial), (OUT_LOCAL, local)):
         with rasterio.open(path, "w", **profile) as dst:
             dst.write(arr, 1)
 
     valid = ~np.isnan(main)
-    print(f"Indice v0.2 (poids égaux) : médiane {np.nanmedian(main):.2f} | "
+    print(f"Indice v0.3 (poids égaux) : médiane {np.nanmedian(main):.2f} | "
           f"{100 * np.nanmean(main > 0.7):.1f} % des pixels au-dessus de 0,7")
 
     stack = np.stack([layers[k][valid] for k in CRITERIA])
@@ -169,19 +193,26 @@ def run():
     for name, arr in scores.items():
         if name != MAIN_SCENARIO:
             print(f"  {MAIN_SCENARIO} vs {name} : {np.corrcoef(ref, arr[valid])[0, 1]:.3f}")
+    print(f"Composantes : corrélation fluviale / locale = {np.corrcoef(fluvial[valid], local[valid])[0, 1]:+.2f} "
+          f"(proche de 0 = elles apportent des informations différentes)")
     top_main = main >= np.nanquantile(main, 0.8)
     print(f"Robustesse : {100 * np.nanmean(robust >= 0.9):.1f} % des pixels sont dans le top 20 % "
           f"dans au moins 90 % des tirages ; "
           f"{100 * np.nanmean(robust[top_main] >= 0.9):.0f} % du top 20 % de la carte principale l'est aussi")
 
     FIGURE.parent.mkdir(parents=True, exist_ok=True)
-    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-    im0 = axes[0].imshow(main, cmap="YlOrRd", vmin=0, vmax=1)
-    axes[0].set_title("Indice de susceptibilité v0.2 (0 à 1)\nrelatif, pas une prédiction")
-    fig.colorbar(im0, ax=axes[0], shrink=0.8)
-    im1 = axes[1].imshow(robust, cmap="Blues", vmin=0, vmax=1)
-    axes[1].set_title("Robustesse : part des tirages de poids\noù le pixel est dans le top 20 %")
-    fig.colorbar(im1, ax=axes[1], shrink=0.8)
+    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+    axes = axes.ravel()
+    panels = [
+        (main, "YlOrRd", "Indice combiné v0.3 (0 à 1)\nrelatif, pas une prédiction"),
+        (robust, "Blues", "Robustesse : part des tirages de poids\noù le pixel est dans le top 20 %"),
+        (fluvial, "YlOrRd", "Composante fluviale (hauteur + distance)\ncontrôlée en partie par Sentinel-1"),
+        (local, "YlOrRd", "Composante locale (pente + TWI)\nNON validée (pas d'étiquettes urbaines)"),
+    ]
+    for ax, (arr, cmap, title) in zip(axes, panels):
+        im = ax.imshow(arr, cmap=cmap, vmin=0, vmax=1)
+        ax.set_title(title)
+        fig.colorbar(im, ax=ax, shrink=0.8)
     for ax in axes:
         ax.set_axis_off()
     fig.tight_layout()

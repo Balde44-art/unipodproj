@@ -1,4 +1,4 @@
-"""Tableau de bord Streamlit de GeoAI Mali (v0.1 : indice de susceptibilité multicritère).
+"""Tableau de bord Streamlit de GeoAI Mali (v0.3 : indice de susceptibilité multicritère).
 
 Lancement depuis la racine du projet :
     streamlit run app/dashboard.py
@@ -15,12 +15,13 @@ from src.visualization.mapping import SCORE_TIF, base_map, build_susceptibility_
 
 st.set_page_config(page_title="GeoAI Mali", layout="wide")
 st.title("GeoAI Mali")
-st.caption("Geospatial Artificial Intelligence for Environmental Risk Analysis — prototype expérimental v0.1")
+st.caption("Geospatial Artificial Intelligence for Environmental Risk Analysis — prototype expérimental v0.3")
 
 st.warning(
-    "Indice relatif de susceptibilité (hauteur au-dessus du Niger, distance aux cours d'eau, pente). "
-    "Ce n'est pas une prédiction d'inondation : poids choisis par expert, pas encore validés "
-    "sur des inondations observées."
+    "Indice relatif de susceptibilité (hauteur au-dessus du Niger, distance aux cours d'eau, pente, TWI). "
+    "Ce n'est pas une prédiction d'inondation : poids choisis par expert. La composante fluviale est "
+    "cohérente avec l'eau détectée par radar en 2024 (étiquettes sans vérification terrain) ; la "
+    "composante locale (pente + TWI) n'est pas validée. Le radar ne voit pas l'inondation urbaine."
 )
 
 

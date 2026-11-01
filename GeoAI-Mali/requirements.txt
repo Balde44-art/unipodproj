@@ -6,7 +6,7 @@ scikit-learn
 jupyter
 ipykernel
 geopandas
-rasterio
+rasterio 
 folium
 streamlit
 streamlit-folium
