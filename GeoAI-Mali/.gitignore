@@ -1,0 +1,28 @@
+# Environnement virtuel
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Données volumineuses (à documenter dans le README, pas à versionner)
+data/raw/*
+data/processed/*
+data/external/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/external/.gitkeep
+
+# Sorties générées
+outputs/figures/*
+outputs/maps/*
+!outputs/figures/.gitkeep
+!outputs/maps/.gitkeep
+
+# Éditeur / système
+.vscode/
+.DS_Store
+Thumbs.db
+.env
