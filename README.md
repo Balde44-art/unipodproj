@@ -84,6 +84,7 @@ Full catalogue with licences, resolutions and known limits: [`data/DATA_SOURCES.
 | HydroSHEDS, CHIRPS, Sentinel-2 | Not needed so far | Identified, not used |
 | Urban flood labels | Target variable | **Open problem**: no open urban flood extent found for Bamako |
 
+web_site summarize : https://unipodproj-aqsfenyhpmmaej4lyhfdpx.streamlit.app/ 
 ## Run the pipeline
 
 From the project root with the virtual environment active (see `docs/METHODOLOGIE.md`, section 10, for the full list):
