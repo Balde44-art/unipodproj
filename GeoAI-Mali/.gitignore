@@ -15,6 +15,14 @@ data/external/*
 !data/processed/.gitkeep
 !data/external/.gitkeep
 
+# Fichiers nécessaires au tableau de bord déployé (petits, résultats déjà calculés)
+!data/processed/susceptibility_bamako_utm.tif
+!data/processed/susceptibility_robust_utm.tif
+!data/processed/susceptibility_fluvial_utm.tif
+!data/processed/susceptibility_local_utm.tif
+!data/processed/flood_s1_count_utm.tif
+!data/raw/osm_water_bamako.geojson
+
 # Sorties générées
 outputs/figures/*
 outputs/maps/*

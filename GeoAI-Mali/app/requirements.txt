@@ -1,0 +1,10 @@
+# Dépendances minimales du tableau de bord (Streamlit Community Cloud lit ce fichier)
+streamlit
+streamlit-folium
+folium
+geopandas
+rasterio
+numpy
+pandas
+matplotlib
+scipy
