@@ -83,6 +83,7 @@ Full catalogue with licences, resolutions and known limits: [`data/DATA_SOURCES.
 | Reference neighbourhoods (articles, press, thesis) | Case check, 6 locations | **Used** (`data/reference/flood_reference_points.csv`) |
 | HydroSHEDS, CHIRPS, Sentinel-2 | Not needed so far | Identified, not used |
 | Urban flood labels | Target variable | **Open problem**: no open urban flood extent found for Bamako |
+
 web_site summarize : https://unipodproj-aqsfenyhpmmaej4lyhfdpx.streamlit.app/ 
 ## Run the pipeline
 
